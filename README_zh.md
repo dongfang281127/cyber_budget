@@ -80,9 +80,6 @@
 
 欢迎贡献代码！如果你有任何新功能点子、UI 设计建议或发现了 Bug，欢迎提交 Issue 或 Pull Request。
 
-## 📄 开源协议
-
-本项目采用 MIT 开源协议 - 详情请见 [LICENSE](LICENSE) 文件。
 
 ---
 
