@@ -80,9 +80,6 @@ It features real-time financial trend charts similar to stock trading terminals,
 
 Contributions are welcome! If you have any ideas for new features or bug fixes, feel free to open an issue or submit a pull request.
 
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
