@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 import '../models/transaction_model.dart';
+import '../models/savings_goal_model.dart'; // 引入金库模型
 import 'cyber_card.dart';
 
 class AddTransactionDialog extends StatefulWidget {
@@ -15,20 +16,28 @@ class AddTransactionDialog extends StatefulWidget {
 
 class _AddTransactionDialogState extends State<AddTransactionDialog> {
   final _amountController = TextEditingController();
-  final _titleController = TextEditingController(); // 你的模型用的是 title
+  final _titleController = TextEditingController();
   DateTime _selectedDate = DateTime.now();
   bool _isExpense = true;
   String _selectedCategory = 'FOOD';
+
+  // 🔴 修正：关联金库的名称 (使用 name 匹配)
+  String _selectedVaultName = 'NONE';
+  List<SavingsGoal> _availableVaults = [];
 
   final List<String> _categories = ['FOOD', 'SNACKS', 'TRAVEL', 'GAME', 'SHOPPING', 'DIGITAL', 'PARENTS', 'OTHER'];
 
   @override
   void initState() {
     super.initState();
-    // 🔴 完美保留你的编辑回显逻辑
+
+    // 初始化时读取所有的金库目标
+    final vaultBox = Hive.box<SavingsGoal>('vault_goals');
+    _availableVaults = vaultBox.values.toList();
+
     if (widget.transaction != null) {
       _amountController.text = widget.transaction!.amount.toString();
-      _titleController.text = widget.transaction!.title; // 这里用的是 title
+      _titleController.text = widget.transaction!.title;
       _selectedDate = widget.transaction!.date;
       _isExpense = widget.transaction!.isExpense;
       _selectedCategory = widget.transaction!.category;
@@ -39,15 +48,12 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final primaryColor = theme.primaryColor;
-    // 🔴 获取当前是否深色模式
     final isDark = theme.brightness == Brightness.dark;
 
-    // 🔴 定义动态颜色 (白天黑字，晚上白字)
     final Color textColor = isDark ? Colors.white : Colors.black;
     final Color subTextColor = isDark ? Colors.white70 : Colors.black54;
     final Color borderColor = isDark ? Colors.white24 : Colors.black12;
 
-    // 字体配置
     const double textSmall = 14.0;
     const double textNormal = 16.0;
     const double textLarge = 20.0;
@@ -107,7 +113,6 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                       child: TextField(
                         controller: _amountController,
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        // 🔴 修复：金额颜色动态变化
                         style: TextStyle(
                           fontSize: textHuge,
                           fontWeight: FontWeight.bold,
@@ -117,7 +122,6 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                         decoration: InputDecoration(
                           border: InputBorder.none,
                           hintText: "0",
-                          // 🔴 修复：提示文字颜色
                           hintStyle: TextStyle(color: isDark ? Colors.white30 : Colors.black26),
                         ),
                       ),
@@ -134,7 +138,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 15),
                   decoration: BoxDecoration(
-                    border: Border.all(color: borderColor), // 🔴 动态边框
+                    border: Border.all(color: borderColor),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -144,7 +148,6 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                       Expanded(
                         child: Text(
                           "DATE: ${DateFormat('yyyy-MM-dd').format(_selectedDate)}",
-                          // 🔴 修复：日期文字颜色
                           style: TextStyle(
                               fontFamily: "Courier",
                               fontSize: textNormal,
@@ -165,8 +168,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
 
               // --- 备注输入 ---
               TextField(
-                controller: _titleController, // 保持你的 title
-                // 🔴 修复：输入文字颜色
+                controller: _titleController,
                 style: TextStyle(fontSize: textNormal, color: textColor),
                 decoration: InputDecoration(
                   labelText: "Note / Remarks",
@@ -178,6 +180,25 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
               ),
 
               const SizedBox(height: 25),
+
+              // --- 金库关联选择区 ---
+              if (_availableVaults.isNotEmpty) ...[
+                Text("LINK_VAULT // 关联金库 (可选):", style: TextStyle(fontFamily: "Courier", color: Colors.grey, fontSize: textSmall)),
+                const SizedBox(height: 10),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _buildVaultChip('NONE', '无关联', primaryColor, isDark, borderColor),
+                      ..._availableVaults.map((vault) =>
+                      // 🔴 修正：使用 vault.name
+                      _buildVaultChip(vault.name, vault.name, Colors.amber, isDark, borderColor)
+                      ).toList(),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 25),
+              ],
 
               // --- 分类选择 ---
               Text("CATEGORY_TAGS:", style: TextStyle(fontFamily: "Courier", color: Colors.grey, fontSize: textSmall)),
@@ -195,7 +216,6 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                       decoration: BoxDecoration(
                           color: isSelected ? primaryColor : Colors.transparent,
                           borderRadius: BorderRadius.circular(8),
-                          // 🔴 动态边框
                           border: Border.all(color: isSelected ? primaryColor : borderColor),
                           boxShadow: isSelected
                               ? [BoxShadow(color: primaryColor.withOpacity(0.4), blurRadius: 8)]
@@ -207,14 +227,12 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                           Icon(
                               _getCategoryIcon(cat),
                               size: 16,
-                              // 🔴 选中时根据黑白模式变色，未选中时灰色
                               color: isSelected ? (isDark ? Colors.black : Colors.white) : Colors.grey
                           ),
                           const SizedBox(width: 6),
                           Text(
                               cat,
                               style: TextStyle(
-                                // 🔴 选中时文字变色
                                   color: isSelected ? (isDark ? Colors.black : Colors.white) : Colors.grey,
                                   fontWeight: FontWeight.bold,
                                   fontFamily: "Courier",
@@ -233,10 +251,9 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
               // --- 底部开关和确认按钮 ---
               Row(
                 children: [
-                  // 开关
                   Container(
                     decoration: BoxDecoration(
-                        color: isDark ? Colors.grey[900] : Colors.grey[200], // 🔴 动态背景
+                        color: isDark ? Colors.grey[900] : Colors.grey[200],
                         borderRadius: BorderRadius.circular(30),
                         border: Border.all(color: borderColor)
                     ),
@@ -247,16 +264,13 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                       ],
                     ),
                   ),
-
                   const SizedBox(width: 10),
-
-                  // 确认按钮
                   Expanded(
                     child: ElevatedButton(
                       onPressed: _submitData,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: primaryColor,
-                        foregroundColor: isDark ? Colors.black : Colors.white, // 🔴 按钮文字颜色
+                        foregroundColor: isDark ? Colors.black : Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 15),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         elevation: 5,
@@ -274,6 +288,44 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
               )
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  // 构建金库 Chip
+  Widget _buildVaultChip(String vaultKey, String displayLabel, Color activeColor, bool isDark, Color borderColor) {
+    // 🔴 修正：对比 _selectedVaultName
+    final isSelected = _selectedVaultName == vaultKey;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedVaultName = vaultKey),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        margin: const EdgeInsets.only(right: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? activeColor.withOpacity(0.2) : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: isSelected ? activeColor : borderColor),
+        ),
+        child: Row(
+          children: [
+            Icon(
+                vaultKey == 'NONE' ? Icons.block : Icons.savings_outlined,
+                size: 14,
+                color: isSelected ? activeColor : Colors.grey
+            ),
+            const SizedBox(width: 5),
+            Text(
+              displayLabel,
+              style: TextStyle(
+                color: isSelected ? activeColor : Colors.grey,
+                fontWeight: FontWeight.bold,
+                fontFamily: "Courier",
+                fontSize: 12,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -309,7 +361,24 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
       return;
     }
 
-    // 🔴 逻辑不变，依然使用 Transaction
+    // 🔴 联动更新金库金额逻辑 (匹配 name)
+    if (_selectedVaultName != 'NONE') {
+      try {
+        final vault = _availableVaults.firstWhere((v) => v.name == _selectedVaultName);
+
+        // 逻辑：Income 增加金额，Expense 减少金额
+        if (!_isExpense) {
+          vault.currentAmount += enteredAmount;
+        } else {
+          vault.currentAmount -= enteredAmount;
+          if (vault.currentAmount < 0) vault.currentAmount = 0;
+        }
+        await vault.save();
+      } catch (e) {
+        debugPrint("Vault update error: $e");
+      }
+    }
+
     if (widget.transaction != null) {
       widget.transaction!.title = enteredTitle;
       widget.transaction!.amount = enteredAmount;
@@ -318,7 +387,6 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
       widget.transaction!.category = _selectedCategory;
       await widget.transaction!.save();
     } else {
-      // 创建新记录
       final newTx = Transaction(
         title: enteredTitle,
         amount: enteredAmount,
@@ -352,7 +420,7 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
               surface: Colors.grey[900]!,
               onSurface: Colors.white,
             )
-                : ColorScheme.light( // 🔴 修复：白天模式日历颜色
+                : ColorScheme.light(
               primary: theme.primaryColor,
               onPrimary: Colors.white,
               onSurface: Colors.black,

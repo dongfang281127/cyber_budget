@@ -59,6 +59,7 @@ dependencies:
   timezone: ^0.9.2 # 用来处理定时任务的时区
   fl_chart: ^0.69.0 # 或者是最新版
   flutter_animate: ^4.5.0  # 🔴 务必确保是 4.5.0 或更高
+  url_launcher: ^6.3.2
 
 
 

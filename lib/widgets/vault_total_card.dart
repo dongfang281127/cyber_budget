@@ -38,13 +38,20 @@ class VaultTotalCard extends StatelessWidget {
               children: [
                 Text("TOTAL RESERVE", style: TextStyle(fontSize: 10, fontFamily: "Courier", color: vaultColor)),
                 const SizedBox(height: 5),
-                Text(
-                  "¥ ${totalSaved.toStringAsFixed(2)}",
-                  style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : Colors.black,
-                      fontFamily: "Courier"
+// 🔴 核心修复：外层加一个 Padding 限制最大宽度，然后用 FittedBox 让文字自适应缩小
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20), // 左右留出安全边距，防止贴边
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown, // 关键：只缩小，不换行，不放大
+                    child: Text(
+                      "¥ ${totalSaved.toStringAsFixed(2)}",
+                      style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : Colors.black,
+                          fontFamily: "Courier"
+                      ),
+                    ),
                   ),
                 ),
               ],
