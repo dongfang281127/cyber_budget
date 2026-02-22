@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+// 引入快捷方式插件
+import 'package:quick_actions/quick_actions.dart';
+
 import '../core/theme/theme_provider.dart';
 import 'dashboard/dashboard_screen.dart'; // 仪表盘
 import 'logs/logs_screen.dart';           // 日志
 import 'vault/vault_screen.dart';         // 金库
 import 'system/system_screen.dart';       // 系统设置
 import '../widgets/add_transaction_dialog.dart'; // 记账弹窗
+
+// 定义控制中心快捷指令通道
+const MethodChannel _quickAddChannel = MethodChannel('com.fincore/quick_add');
 
 class RootPage extends StatefulWidget {
   const RootPage({super.key});
@@ -16,6 +23,53 @@ class RootPage extends StatefulWidget {
 
 class _RootPageState extends State<RootPage> {
   int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkQuickAddFromColdStart(); // 检查下拉控制中心的指令
+    _setupQuickActions();          // 🔴 初始化桌面长按快捷菜单
+  }
+
+  // 🔴 桌面长按菜单的核心逻辑
+  void _setupQuickActions() {
+    const QuickActions quickActions = QuickActions();
+
+    // 监听点击事件
+    quickActions.initialize((String shortcutType) {
+      if (shortcutType == 'action_quick_add') {
+        // 稍微延迟，等页面完全渲染出来再弹窗，体验更丝滑
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (mounted) {
+            _onAddPressed();
+          }
+        });
+      }
+    });
+
+    // 设置菜单项
+    quickActions.setShortcutItems(<ShortcutItem>[
+      const ShortcutItem(
+        type: 'action_quick_add',
+        localizedTitle: '快速记账',
+        // 🔴 这里直接写图片名字（不带后缀），安卓系统会自动去 drawable 文件夹里找它！
+        icon: 'ic_signature',
+      ),
+    ]);
+  }
+
+  // 检查控制中心冷启动
+  Future<void> _checkQuickAddFromColdStart() async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    try {
+      final bool shouldOpen = await _quickAddChannel.invokeMethod('checkQuickAdd');
+      if (shouldOpen && mounted) {
+        _onAddPressed();
+      }
+    } catch (e) {
+      debugPrint("快捷开关冷启动检查失败: $e");
+    }
+  }
 
   // 页面列表
   final List<Widget> _pages = const [
@@ -84,7 +138,7 @@ class _RootPageState extends State<RootPage> {
         selectedItemColor: theme.primaryColor,
         unselectedItemColor: Colors.grey,
 
-        // 🔴 关键修改：缩小字体到 10，防止溢出
+        // 缩小字体到 10，防止溢出
         selectedLabelStyle: const TextStyle(
             fontSize: 10,
             fontFamily: "Courier",

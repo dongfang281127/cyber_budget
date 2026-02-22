@@ -173,4 +173,31 @@ class NotificationService {
     }
     return scheduledDate;
   }
+  // 🔴 新增：显示常驻通知 (Persistent Notification)
+  static Future<void> showPersistentQuickAddNotification() async {
+    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+      'persistent_quick_add_channel',
+      'Quick Add',
+      channelDescription: 'Persistent notification for quick accounting',
+      importance: Importance.low, // 设置为 low，这样它就不会每次都发出声音或弹横幅打扰你
+      priority: Priority.low,
+      ongoing: true, // 🔴 核心魔法：设为 true 后，用户无法左右滑动删掉这条通知！
+      autoCancel: false,
+    );
+
+    const NotificationDetails details = NotificationDetails(android: androidDetails);
+
+    await _notificationsPlugin.show(
+      9999, // 专属的固定 ID
+      '⚡ 快捷记账 // FinCore',
+      'Tap here to log an expense quickly // 点击此处快速记一笔',
+      details,
+      payload: 'action_quick_add', // 🔴 专属标识符，告诉系统点击后要做什么
+    );
+  }
+
+  // 🔴 新增：关闭常驻通知
+  static Future<void> hidePersistentQuickAddNotification() async {
+    await _notificationsPlugin.cancel(9999);
+  }
 }

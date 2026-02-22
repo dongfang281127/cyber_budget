@@ -4,7 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 class VersionInfoCard extends StatelessWidget {
   const VersionInfoCard({super.key});
 
-  // 🔴 你的 GitHub Release 链接
+  // 你的 GitHub Release 链接
   final String releaseUrl = "https://github.com/dongfang281127/cyber_budget/releases/latest";
 
   @override
@@ -48,7 +48,7 @@ class VersionInfoCard extends StatelessWidget {
                           style: TextStyle(fontWeight: FontWeight.bold, fontFamily: "Courier")
                       ),
                       Text(
-                          "v1.0.0 (Tap for details & updates)",
+                          "v1.0.2 (Tap for details & updates)", // 🔴 升级为 1.0.2
                           style: TextStyle(fontSize: 10, color: Colors.grey)
                       ),
                     ],
@@ -78,7 +78,7 @@ class VersionInfoCard extends StatelessWidget {
             Icon(Icons.terminal, color: primaryColor, size: 40),
             const SizedBox(height: 10),
             Text(
-              "FinCore v1.0.0",
+              "FinCore v1.0.2", // 🔴 升级为 1.0.2
               style: TextStyle(
                 fontFamily: "Courier",
                 fontWeight: FontWeight.bold,
@@ -97,11 +97,14 @@ class VersionInfoCard extends StatelessWidget {
               style: TextStyle(fontSize: 12, color: isDark ? Colors.grey : Colors.black54, fontFamily: "Courier"),
             ),
             const SizedBox(height: 10),
-            // 🔴 你可以在这里随便写你的更新内容
-            _buildLogItem("UI: 赛博朋克主题全面上线"),
-            _buildLogItem("Feature: 新增金库(Vault)储蓄目标功能"),
-            _buildLogItem("Feature: 图表动态扫描线特效重构"),
-            _buildLogItem("Fix: 修复了金额过大导致排版错位的问题"),
+
+            // 🔴 最新的硬核更新日志！
+            _buildLogItem("Feature: 深度接入系统底层，支持0耗电全局极速唤醒"),
+            _buildLogItem("Module: 新增 [控制中心] 专属快捷记账开关"),
+            _buildLogItem("Module: 新增 [桌面长按] 专属图标快捷菜单"),
+            _buildLogItem("Module: 新增 [常驻通知栏] 快捷记账沉浸式入口"),
+            _buildLogItem("Fix: 优化底层图片资源寻址逻辑，提升系统兼容性"),
+
             const SizedBox(height: 15),
             Text(
               "Developed by Dongfang",

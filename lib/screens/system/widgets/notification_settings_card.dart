@@ -11,6 +11,8 @@ class NotificationSettingsCard extends StatefulWidget {
 
 class _NotificationSettingsCardState extends State<NotificationSettingsCard> {
   bool _isReminderOn = false;
+  // 🔴 1. 新增：常驻快捷记账的开关状态
+  bool _isQuickAddOn = false;
   bool _isLoading = true;
   TimeOfDay _reminderTime = const TimeOfDay(hour: 20, minute: 0);
 
@@ -24,6 +26,9 @@ class _NotificationSettingsCardState extends State<NotificationSettingsCard> {
     final box = await Hive.openBox('settings');
     setState(() {
       _isReminderOn = box.get('daily_reminder', defaultValue: false);
+      // 🔴 2. 读取快捷记账的保存状态
+      _isQuickAddOn = box.get('quick_add_persistent', defaultValue: false);
+
       int hour = box.get('reminder_hour', defaultValue: 20);
       int minute = box.get('reminder_minute', defaultValue: 0);
       _reminderTime = TimeOfDay(hour: hour, minute: minute);
@@ -42,8 +47,26 @@ class _NotificationSettingsCardState extends State<NotificationSettingsCard> {
       final timeStr = _reminderTime.format(context);
       if (mounted) _showMsg("REMINDER SET // 已开启\nDaily at $timeStr");
     } else {
-      await NotificationService.cancelAll();
+      await NotificationService.cancelAll(); // 注意：这会取消所有通知！
+      // 🔴 3. 核心逻辑：因为 cancelAll 把所有通知都清了，如果快捷记账本来是开着的，我们要把它重新拉起来
+      if (_isQuickAddOn) {
+        await NotificationService.showPersistentQuickAddNotification();
+      }
       if (mounted) _showMsg("REMINDER OFF // 已关闭");
+    }
+  }
+
+  // 🔴 4. 新增：控制常驻快捷记账开关的方法
+  void _toggleQuickAdd(bool value) async {
+    setState(() => _isQuickAddOn = value);
+    final box = Hive.box('settings');
+    await box.put('quick_add_persistent', value);
+
+    if (value) {
+      await NotificationService.requestPermissions();
+      await NotificationService.showPersistentQuickAddNotification();
+    } else {
+      await NotificationService.hidePersistentQuickAddNotification();
     }
   }
 
@@ -109,6 +132,7 @@ class _NotificationSettingsCardState extends State<NotificationSettingsCard> {
         Card(
           child: Column(
             children: [
+              // === 原有的定时提醒模块 ===
               SwitchListTile(
                 title: const Text("Daily Reminder"),
                 subtitle: Text("Notify daily at ${_reminderTime.format(context)}"),
@@ -129,16 +153,13 @@ class _NotificationSettingsCardState extends State<NotificationSettingsCard> {
                   onTap: _pickTime,
                 ),
 
-                // 🔴 新增：临时的测试按钮，测完可以删掉
                 const Divider(height: 1, indent: 70),
                 ListTile(
                   leading: const SizedBox(width: 24),
                   title: const Text("Test Notification // 发送测试通知", style: TextStyle(fontSize: 12, color: Colors.amber)),
                   trailing: const Icon(Icons.send, color: Colors.amber, size: 20),
                   onTap: () async {
-                    // 🔴 强制检查/请求一次权限
                     await NotificationService.requestPermissions();
-                    // 🔴 发送测试通知
                     await NotificationService.showInstantNotification();
 
                     if (mounted) {
@@ -148,7 +169,21 @@ class _NotificationSettingsCardState extends State<NotificationSettingsCard> {
                     }
                   },
                 ),
-              ]
+              ],
+
+              // 🔴 5. 新增：常驻快捷记账独立开关！(跟定时提醒分开，互不干扰)
+              const Divider(height: 1),
+              SwitchListTile(
+                title: const Text("Quick Add Tracker"),
+                subtitle: const Text("Persistent notification // 常驻快捷记账"),
+                secondary: Icon(
+                    _isQuickAddOn ? Icons.bolt : Icons.offline_bolt_outlined,
+                    color: _isQuickAddOn ? Colors.amber : Colors.grey
+                ),
+                value: _isQuickAddOn,
+                onChanged: _toggleQuickAdd,
+                activeColor: Colors.amber,
+              ),
             ],
           ),
         ),
